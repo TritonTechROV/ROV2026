@@ -26,11 +26,17 @@ var buttonLabels = [
     "16" // 16
 ];
 
+/*
+  lower x value = more left
+  lower y value = more down
+*/
 var axisLabels = [
     "LS X",   // 0 → Left stick horizontal
     "LS Y",   // 1 → Left stick vertical
     "RS X",   // 2 → Right stick horizontal
-    "RS Y"    // 3 → Right stick vertical
+    "RS Y",   // 3 → Right stick vertical
+    "LT",     // 4 → Left Trigger
+    "RT"      // 5 → Right Trigger
 ];
 
 var haveEvents = 'GamepadEvent' in window;
@@ -43,8 +49,10 @@ var rAF = window.mozRequestAnimationFrame ||
 function connecthandler(e) {
     addgamepad(e.gamepad);
 }
+
 function addgamepad(gamepad) {
-    controllers[gamepad.index] = gamepad; var d = document.createElement("div");
+    controllers[gamepad.index] = gamepad;
+    var d = document.createElement("div");
     d.setAttribute("id", "controller" + gamepad.index);
     var t = document.createElement("h1");
     t.appendChild(document.createTextNode("gamepad: " + gamepad.id));
@@ -63,14 +71,27 @@ function addgamepad(gamepad) {
     var a = document.createElement("div");
     a.className = "axes";
     for (i = 0; i < gamepad.axes.length; i++) {
-        e = document.createElement("meter");
+        // axis container for both label and bar
+        var axisContainer = document.createElement("div");
+        axisContainer.className = "axis-container";
+
+        // axis bar
+        var e = document.createElement("meter");
         e.className = "axis";
-        //e.id = "a" + i;
         e.setAttribute("min", "-1");
         e.setAttribute("max", "1");
         e.setAttribute("value", "0");
-        e.innerHTML = i;
-        a.appendChild(e);
+
+        // label for axis
+        var label = document.createElement("div");
+        label.className = "axis-label";
+        label.innerText = axisLabels[i] || ("Axis " + i);
+
+        // add elements to container
+        axisContainer.appendChild(label);
+        axisContainer.appendChild(e);
+
+        a.appendChild(axisContainer);
     }
     d.appendChild(a);
     document.getElementById("start").style.display = "none";
