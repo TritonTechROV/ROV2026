@@ -1,8 +1,5 @@
 import cv2
 import numpy as np
-from flask import Flask, Response, render_template_string
-
-app = Flask(__name__)
 
 TARGET_COLOR_LOWER = np.array([100, 150, 50])
 TARGET_COLOR_UPPER = np.array([140, 255, 255])
@@ -15,38 +12,6 @@ print("Camera opened:", cam.isOpened())
 
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_PIXELS_WIDTH)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION_PIXELS_HEIGHT)
-
-HTML_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Camera Stream</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: #111;
-            color: white;
-        }
-
-        h1 {
-            margin-top: 20px;
-        }
-
-        img {
-            margin-top: 20px;
-            max-width: 90%;
-            border: 2px solid white;
-        }
-    </style>
-</head>
-<body>
-    <h1>ROV Camera Stream</h1>
-    <img src="/video_feed" alt="Live camera stream">
-</body>
-</html>
-"""
 
 def generate_frames():
     while True:
@@ -87,17 +52,3 @@ def generate_frames():
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
         )
-
-@app.route("/")
-def index():
-    return render_template_string(HTML_PAGE)
-
-@app.route("/video_feed")
-def video_feed():
-    return Response(
-        generate_frames(),
-        mimetype="multipart/x-mixed-replace; boundary=frame"
-    )
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
