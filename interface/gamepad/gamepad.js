@@ -1,29 +1,33 @@
-/*
- * Gamepad API Test
- * Written in 2013 by Ted Mielczarek <ted@mielczarek.org>
- *
- * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
- *
- * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+/* notes on the 046d-c21d-Logitech:
+ * - The controller has a backswitch with a X and D label, X will suffix the controller
+ *   with "Gamepad F310", this mode will treat the left/right triggers as button signals. (on or off)
+ *   On the other hand, the D label, suffixed with "Gamepad F310", will treat the triggers
+ *   as analog signals. This is why there are RT/LT labels for axes and buttons.
+ * - There is also a mode button right under the back button in the center of the controller, this will
+ *   swap the D-Pad and the left-joystick, meaning the D-Pad will show up as left-joystick analog signals,
+ *   while the left-joystick will show up as button D-Pad buttons. This swapped state is indicated by a green
+ *   light next to the mode button
+ * - overall, please keep the controller with the backswitch on the X side and the mode toggle to be off
  */
+
 var buttonLabels = [
-    "A", // 0
-    "B", // 1
-    "Y", // 2
-    "X", // 3
-    "LB", // 4
-    "RB", // 5
-    "6", // 6
-    "7", // 7
-    "BACK", // 8
+    "A",     // 0
+    "B",     // 1
+    "Y",     // 2
+    "X",     // 3
+    "LB",    // 4
+    "RB",    // 5
+    "LT",    // 6 → Left Trigger
+    "RT",    // 7 → Right Trigger
+    "BACK",  // 8
     "START", // 9
-    "LS", // left stick press, 10
-    "RS", // right stick press, 11
-    "D-UP", // 12
-    "D-DOWN", // 13
-    "D-LEFT", // 14
-    "D-RIGHT", // 15
-    "16" // 16
+    "LS",    // 10 → left stick press
+    "RS",    // 11 → right stick press
+    "DU",    // 12 D-pad Up
+    "DD",    // 13 D-pad Down
+    "DL",    // 14 D-pad Left
+    "DR",    // 15 D-pad Right
+    "HOME"   // 16
 ];
 
 /*
@@ -35,8 +39,8 @@ var axisLabels = [
     "LS Y",   // 1 → Left stick vertical
     "RS X",   // 2 → Right stick horizontal
     "RS Y",   // 3 → Right stick vertical
-    "LT",     // 4 → Left Trigger
-    "RT"      // 5 → Right Trigger
+    "LT",     // 4 → Left Trigger Analog
+    "RT"      // 5 → Right Trigger Analog
 ];
 
 var haveEvents = 'GamepadEvent' in window;
@@ -52,8 +56,10 @@ function connecthandler(e) {
 
 function addgamepad(gamepad) {
     controllers[gamepad.index] = gamepad;
+
     var d = document.createElement("div");
     d.setAttribute("id", "controller" + gamepad.index);
+
     var t = document.createElement("h1");
     t.appendChild(document.createTextNode("gamepad: " + gamepad.id));
     d.appendChild(t);
@@ -62,8 +68,6 @@ function addgamepad(gamepad) {
     for (var i = 0; i < gamepad.buttons.length; i++) {
         var e = document.createElement("span");
         e.className = "button";
-        //e.id = "b" + i;
-        //e.innerHTML = i;
         e.innerHTML = buttonLabels[i] || ("B" + i);
         b.appendChild(e);
     }
