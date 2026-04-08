@@ -21,6 +21,8 @@
       default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
           opencv
+          python3Packages.flask
+          python3Packages.opencv-python
           platformio
         ];
       };
