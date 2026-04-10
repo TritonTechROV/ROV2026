@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, Response, jsonify
+from flask import Flask, Response, jsonify, render_template
 
 from vision.camera import generate_frames, is_camera_connected
 
@@ -10,6 +10,9 @@ app = Flask(
 	template_folder=str(BASE_DIR / "templates"),
 	static_folder=str(BASE_DIR / "static"),
 )
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+app.jinja_env.auto_reload = True
 
 
 def iter_watched_files():
@@ -32,7 +35,7 @@ def get_source_revision() -> int:
 
 @app.route("/")
 def index():
-	return (BASE_DIR / "dashboard.html").read_text(encoding="utf-8")
+	return render_template("dashboard.html")
 
 @app.route("/video_feed")
 def video_feed():
@@ -47,7 +50,7 @@ def camera_status():
 
 @app.route("/__source_revision")
 def source_revision():
-	return jsonify({"revision": get_source_revision()})
+	return jsonify({"revision": str(get_source_revision())})
 
 
 if __name__ == "__main__":
