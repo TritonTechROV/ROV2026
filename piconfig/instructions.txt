@@ -1,0 +1,10 @@
+This is for if the code is run on a new raspberry pi.
+1. Inside ROV2026/piconfig/, run: chmod +x setupeverything.sh
+this will make the script executable
+2. Run setupeverything.sh (just do ./setupeverything.sh inside ROV2026/piconfig/)
+
+** What this script does **
+Copies "startrovcode.service" to /etc/systemd/system/
+This will start the code whenever the ROV boots, so we don't have to manually log in every time.
+You can do this with the following command:
+sudo cp ~/ROV2026/piconfig/startrovcode.service /etc/systemd/system/

@@ -1,23 +1,91 @@
 import cv2
 import numpy as np
+import time
+from threading import Lock
 
 TARGET_COLOR_LOWER = np.array([100, 150, 50])
 TARGET_COLOR_UPPER = np.array([140, 255, 255])
 
 RESOLUTION_PIXELS_WIDTH = 1920
 RESOLUTION_PIXELS_HEIGHT = 1080
+CAMERA_INDEX = 0
 
-cam = cv2.VideoCapture(0)
-print("Camera opened:", cam.isOpened())
+cam = None
+CAMERA_LOCK = Lock()
 
-cam.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_PIXELS_WIDTH)
-cam.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION_PIXELS_HEIGHT)
+
+def open_camera() -> None:
+    global cam
+
+    with CAMERA_LOCK:
+        if cam is not None:
+            cam.release()
+
+        cam = cv2.VideoCapture(CAMERA_INDEX)
+
+        if cam.isOpened():
+            cam.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_PIXELS_WIDTH)
+            cam.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION_PIXELS_HEIGHT)
+
+        print("Camera opened:", cam.isOpened())
+
+
+def is_camera_connected() -> bool:
+    if cam is None:
+        open_camera()
+
+    with CAMERA_LOCK:
+        connected = cam is not None and cam.isOpened()
+
+    if not connected:
+        open_camera()
+        with CAMERA_LOCK:
+            connected = cam is not None and cam.isOpened()
+
+    return connected
+
+
+def encode_mjpeg_frame(frame: np.ndarray):
+    success, buffer = cv2.imencode(".jpg", frame)
+    if not success:
+        return None
+
+    frame_bytes = buffer.tobytes()
+    return (
+        b"--frame\r\n"
+        b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
+    )
+
+
+def generate_status_frame() -> np.ndarray:
+    frame = np.zeros((480, 854, 3), dtype=np.uint8)
+    return frame
 
 def generate_frames():
     while True:
-        ret, frame = cam.read()
+        if not is_camera_connected():
+            open_camera()
+            placeholder = encode_mjpeg_frame(generate_status_frame())
+            if placeholder is not None:
+                yield placeholder
+            time.sleep(0.5)
+            continue
+
+        with CAMERA_LOCK:
+            local_cam = cam
+
+        if local_cam is None:
+            time.sleep(0.2)
+            continue
+
+        ret, frame = local_cam.read()
 
         if not ret:
+            open_camera()
+            placeholder = encode_mjpeg_frame(generate_status_frame())
+            if placeholder is not None:
+                yield placeholder
+            time.sleep(0.2)
             continue
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -42,13 +110,8 @@ def generate_frames():
                 2
             )
 
-        success, buffer = cv2.imencode(".jpg", frame)
-        if not success:
+        encoded = encode_mjpeg_frame(frame)
+        if encoded is None:
             continue
 
-        frame_bytes = buffer.tobytes()
-
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
-        )
+        yield encoded

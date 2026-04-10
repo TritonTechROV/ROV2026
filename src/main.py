@@ -1,12 +1,30 @@
 from pathlib import Path
 
-from flask import Flask, Response
+from flask import Flask, Response, jsonify
 
-from vision.camera import generate_frames
+from vision.camera import generate_frames, is_camera_connected
 
 app = Flask(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
+
+
+def iter_watched_files():
+	for path in BASE_DIR.rglob("*"):
+		if not path.is_file():
+			continue
+		if "__pycache__" in path.parts:
+			continue
+		yield path
+
+
+def get_source_revision() -> int:
+	latest = 0
+	for path in iter_watched_files():
+		mtime = path.stat().st_mtime_ns
+		if mtime > latest:
+			latest = mtime
+	return latest
 
 
 @app.route("/")
@@ -22,6 +40,17 @@ def video_feed():
 	)
 
 
+@app.route("/camera_status")
+def camera_status():
+	return jsonify({"connected": is_camera_connected()})
+
+
+@app.route("/__source_revision")
+def source_revision():
+	return jsonify({"revision": get_source_revision()})
+
+
 if __name__ == "__main__":
-	app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+	extra_files = [str(path) for path in iter_watched_files()]
+	app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True, extra_files=extra_files)
 
