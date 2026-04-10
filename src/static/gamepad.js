@@ -99,7 +99,7 @@ function addgamepad(gamepad) {
     }
     d.appendChild(a);
     document.getElementById("start").style.display = "none";
-    document.body.appendChild(d);
+    document.getElementById("controller-display").appendChild(d);
     rAF(updateStatus);
 }
 
