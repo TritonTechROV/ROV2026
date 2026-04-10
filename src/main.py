@@ -1,12 +1,15 @@
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, render_template
+from flask import Flask, Response, jsonify
 
 from vision.camera import generate_frames, is_camera_connected
 
-app = Flask(__name__)
-
 BASE_DIR = Path(__file__).resolve().parent
+app = Flask(
+	__name__,
+	template_folder=str(BASE_DIR / "templates"),
+	static_folder=str(BASE_DIR / "static"),
+)
 
 
 def iter_watched_files():
@@ -29,7 +32,7 @@ def get_source_revision() -> int:
 
 @app.route("/")
 def index():
-	return render_template("dashboard.html")
+	return (BASE_DIR / "dashboard.html").read_text(encoding="utf-8")
 
 @app.route("/video_feed")
 def video_feed():
