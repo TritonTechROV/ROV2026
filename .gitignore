@@ -1,3 +1,2 @@
 /.direnv/
-/src/vision/__pycache__/camera.cpython-313.pyc
-/src/vision/__pycache__
+src/vision/__pycache__/**
