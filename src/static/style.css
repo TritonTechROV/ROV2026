@@ -1,0 +1,104 @@
+/*  Classic Dark – by Jason Heeris */
+:root {
+    --base00: #151515;
+    --base01: #202020;
+    --base02: #303030;
+    --base03: #505050;
+    --base04: #B0B0B0;
+    --base05: #D0D0D0;
+    --base06: #E0E0E0;
+    --base07: #F5F5F5;
+    --base08: #AC4142;
+    --base09: #D28445;
+    --base0A: #F4BF75;
+    --base0B: #90A959;
+    --base0C: #75B5AA;
+    --base0D: #6A9FB5;
+    --base0E: #AA759F;
+    --base0F: #8F5536;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: var(--base00);
+    color: var(--base07);
+}
+
+img {
+    margin-top: 20px;
+    max-width: 90%;
+    border: 2px solid var(--base07);
+}
+
+/**** controller bars & buttons ****/
+.axes {
+    padding: 1em;
+}
+
+.buttons {
+    margin-left: 1em;
+}
+
+/*meter*/.axis {
+    min-width: 200px;
+    margin: 1em;
+}
+
+.button {
+    display: inline-block;
+    width: 3em;
+    text-align: center;
+    padding: 1em;
+    border-radius: 20px;
+    border: 1px solid var(--base07);
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAAxJREFUCNdjYPjPAAACAgEAqiqeJwAAAABJRU5ErkJggg==);
+    background-size: 0% 0%;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+}
+
+.touched::after {
+    display: block;
+    position: absolute;
+    margin-top: -0.2em;
+    margin-left: -0.5em;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+
+/**** tabs ****/
+.tab {
+    overflow: hidden;
+    border: 1px solid var(--base07);
+    background-color: var(--base00);
+}
+
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+    color: var(--base07);
+}
+
+.tab button:hover {
+    background-color: var(--base01);
+}
+
+.tab button.active {
+    background-color: var(--base02);
+}
+
+/* style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid var(--base07);
+    border-top: none;
+}

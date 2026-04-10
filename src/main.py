@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, Response, jsonify
+from flask import Flask, Response, jsonify, render_template
 
 from vision.camera import generate_frames, is_camera_connected
 
@@ -29,8 +29,7 @@ def get_source_revision() -> int:
 
 @app.route("/")
 def index():
-	return (BASE_DIR / "dashboard.html").read_text(encoding="utf-8")
-
+	return render_template("dashboard.html")
 
 @app.route("/video_feed")
 def video_feed():
@@ -38,8 +37,6 @@ def video_feed():
 		generate_frames(),
 		mimetype="multipart/x-mixed-replace; boundary=frame",
 	)
-
-
 @app.route("/camera_status")
 def camera_status():
 	return jsonify({"connected": is_camera_connected()})
@@ -53,4 +50,3 @@ def source_revision():
 if __name__ == "__main__":
 	extra_files = [str(path) for path in iter_watched_files()]
 	app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True, extra_files=extra_files)
-

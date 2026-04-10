@@ -22,6 +22,8 @@
         nativeBuildInputs = with pkgs; [
           opencv
           platformio
+          python3Packages.flask
+          python3Packages.opencv-python
         ];
       };
     });
