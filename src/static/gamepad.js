@@ -149,6 +149,7 @@ function updateStatus() {
             a.setAttribute("value", controller.axes[i]);
         }
     }
+    printStatus();
     rAF(updateStatus);
 }
 
@@ -158,6 +159,54 @@ function scangamepads() {
         if (gamepads[i] && (gamepads[i].index in controllers)) {
             controllers[gamepads[i].index] = gamepads[i];
         }
+    }
+}
+
+var prev = {};
+function printStatus() {
+    var gamepads = navigator.getGamepads();
+
+    if (gamepads.length == 0)
+        return "no gamepads detected :(";
+
+    for (idx in gamepads) {
+        const gp = gamepads[idx];
+        // skip null values
+        if (!gp) continue;
+
+        // initialize prev values
+        if (!prev[idx]) {
+            prev[idx] = {
+                buttons: [],
+                axes: []
+            };
+        }
+
+        // buttons
+        gp.buttons.forEach((b, i) => {
+            if (prev[idx].buttons[i] !== b.value) {
+                console.log(
+                    i + ";",
+                    buttonLabels[i] + ":",
+                    b.value
+                )
+            }
+        });
+
+        // axes
+        gp.axes.forEach((a, i) => {
+            if (prev[idx].axes[i] !== a) {
+                console.log(
+                    i + ";",
+                    axisLabels[i] + ":",
+                    a
+                )
+            }
+        });
+
+        // update previous values
+        prev[gp.index].buttons = gp.buttons.map(b => b.value);
+        prev[gp.index].axes = [...gp.axes];
     }
 }
 
