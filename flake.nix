@@ -23,6 +23,7 @@
           opencv
           platformio
           python3Packages.flask
+          python3Packages.flask-socketio
           python3Packages.opencv-python
         ];
       };

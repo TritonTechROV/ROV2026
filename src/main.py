@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, render_template
+from flask_socketio import SocketIO
 
 from vision.camera import generate_frames, is_camera_connected
 
@@ -13,6 +14,7 @@ app = Flask(
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.jinja_env.auto_reload = True
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 def iter_watched_files():
@@ -31,6 +33,15 @@ def get_source_revision() -> int:
 		if mtime > latest:
 			latest = mtime
 	return latest
+
+
+@socketio.on('connect')
+def handle_connect():
+        print("Client connected")
+
+@socketio.on('controller')
+def handle_controller(data):
+        print("Controller data:", data)
 
 
 @app.route("/")
@@ -54,5 +65,6 @@ def source_revision():
 
 
 if __name__ == "__main__":
-	extra_files = [str(path) for path in iter_watched_files()]
-	app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True, extra_files=extra_files)
+    extra_files = [str(path) for path in iter_watched_files()]
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True, extra_files=extra_files)
+    socketio.run(app, port=5000, debug=False, use_reloader=False)

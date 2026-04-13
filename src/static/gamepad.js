@@ -133,6 +133,7 @@ function updateStatus() {
             }
             var pct = Math.round(val * 100) + "%";
             b.style.backgroundSize = pct + " " + pct;
+
             b.className = "button";
             if (pressed) {
                 b.className += " pressed";
@@ -209,6 +210,30 @@ function printStatus() {
         prev[gp.index].axes = [...gp.axes];
     }
 }
+
+
+let lastData = {};
+function getStatus() {
+    const gp = navigator.getGamepads()[0];
+    if (!gp) return;
+
+    const current = {
+        buttons: gp.buttons.map(b => b.value),
+        axes: gp.axes
+    };
+
+    if (JSON.stringify(current) !== JSON.stringify(lastData)) {
+        lastData = current;
+        socket.emit("controller", current);
+    }
+}
+
+const socket = io("http://localhost:5000");
+socket.on("connect", () => {
+    console.log("Connected!");
+
+    setInterval(getStatus, 50);
+});
 
 if (haveEvents) {
     window.addEventListener("gamepadconnected", connecthandler);
