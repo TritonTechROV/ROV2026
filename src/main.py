@@ -1,20 +1,36 @@
 from pathlib import Path
+import logging
 
 from flask import Flask, Response, jsonify, render_template
 from flask_socketio import SocketIO
 
 from vision.camera import generate_frames, is_camera_connected
 
+# setup - logger
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("pi")
+
+# setup - paths
 BASE_DIR = Path(__file__).resolve().parent
+CERT_DIR = BASE_DIR / "certs"
+
+# flask - create app
 app = Flask(
 	__name__,
 	template_folder=str(BASE_DIR / "templates"),
 	static_folder=str(BASE_DIR / "static"),
 )
+# flask - config
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.jinja_env.auto_reload = True
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# socketio - setup
+socketio = SocketIO(
+        app,
+        cors_allowed_origins="*",
+        async_mode="threading"
+)
 
 
 def iter_watched_files():
@@ -33,12 +49,6 @@ def get_source_revision() -> int:
 		if mtime > latest:
 			latest = mtime
 	return latest
-
-# color = integer for ansi code, msg = message
-# 30 black, 31 red, 32 green, 33 yellow
-# 34 blue, 35 magenta, 36 cyan, 37 white
-def print_ansi(color, msg):
-        print(f"\033[{color}m{msg}\033[0m")
 
 
 @app.route("/")
@@ -63,14 +73,14 @@ def source_revision():
 
 @socketio.on('connect')
 def handle_connect():
-        print("Client connected")
+        log.info("Client connected")
 
 @socketio.on('controller')
 def handle_controller(data):
         buttons = data.get("buttons") or []
         axes = data.get("axes") or []
-        print_ansi(36, f"axes: {axes}")
-        print_ansi(36, f"buttons: {buttons}")
+        log.info(f"axes: {axes}")
+        log.info(f"buttons: {buttons}")
 
 
 if __name__ == "__main__":
@@ -79,7 +89,9 @@ if __name__ == "__main__":
             app,
             host="0.0.0.0",
             port=5000,
+            ssl_context=(CERT_DIR / "cert.pem", CERT_DIR / "key.pem"),
             debug=False,
             use_reloader=True,
+            allow_unsafe_werkzeug=True,
             extra_files=extra_files
     )
