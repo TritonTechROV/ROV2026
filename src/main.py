@@ -34,14 +34,11 @@ def get_source_revision() -> int:
 			latest = mtime
 	return latest
 
-
-@socketio.on('connect')
-def handle_connect():
-        print("Client connected")
-
-@socketio.on('controller')
-def handle_controller(data):
-        print("Controller data:", data)
+# color = integer for ansi code, msg = message
+# 30 black, 31 red, 32 green, 33 yellow
+# 34 blue, 35 magenta, 36 cyan, 37 white
+def print_ansi(color, msg):
+        print(f"\033[{color}m{msg}\033[0m")
 
 
 @app.route("/")
@@ -64,7 +61,25 @@ def source_revision():
 	return jsonify({"revision": str(get_source_revision())})
 
 
+@socketio.on('connect')
+def handle_connect():
+        print("Client connected")
+
+@socketio.on('controller')
+def handle_controller(data):
+        buttons = data.get("buttons") or []
+        axes = data.get("axes") or []
+        print_ansi(36, f"axes: {axes}")
+        print_ansi(36, f"buttons: {buttons}")
+
+
 if __name__ == "__main__":
     extra_files = [str(path) for path in iter_watched_files()]
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True, extra_files=extra_files)
-    socketio.run(app, port=5000, debug=False, use_reloader=False)
+    socketio.run(
+            app,
+            host="0.0.0.0",
+            port=5000,
+            debug=False,
+            use_reloader=True,
+            extra_files=extra_files
+    )

@@ -7,18 +7,16 @@
 </head>
 <body>
     <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'camfeed_main')">main_camera</button>
+        <button class="tablinks" onclick="openTab(event, 'camera_main')">Camera Main</button>
         <button class="tablinks" onclick="openTab(event, 'controller')">Controller</button>
     </div>
 
-    <div id="camfeed_main" class="tabcontent">
-        <h3>Main Camera Stream</h3>
+    <div id="camera_main" class="tabcontent">
         <img id="camera-stream" src="/video_feed" alt="No Camera Stream :(">
         <p id="camera-status">Camera not connected</p>
     </div>
 
     <div id="controller" class="tabcontent">
-        <h3>Controller Input Monitor</h3>
         <div id="start">Waiting for controller...</div>
         <div id="controller-display"></div>
     </div>

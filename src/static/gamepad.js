@@ -150,7 +150,7 @@ function updateStatus() {
             a.setAttribute("value", controller.axes[i]);
         }
     }
-    printStatus();
+    // printStatus();
     rAF(updateStatus);
 }
 
@@ -228,7 +228,7 @@ function getStatus() {
     }
 }
 
-const socket = io("http://localhost:5000");
+const socket = io();
 socket.on("connect", () => {
     console.log("Connected!");
 
