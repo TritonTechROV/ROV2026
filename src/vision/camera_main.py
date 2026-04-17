@@ -10,6 +10,15 @@ RESOLUTION_PIXELS_WIDTH = 1920
 RESOLUTION_PIXELS_HEIGHT = 1080
 CAMERA_INDEX = 0
 
+# real width of the colored object in cm
+REAL_OBJECT_WIDTH_CM = 2.0
+
+# from your calibration
+FX = 1612.3202705988722
+
+# ignore tiny noise blobs
+MIN_CONTOUR_AREA = 100
+
 cam = None
 CAMERA_LOCK = Lock()
 
@@ -61,6 +70,7 @@ def generate_status_frame() -> np.ndarray:
     frame = np.zeros((480, 854, 3), dtype=np.uint8)
     return frame
 
+
 def generate_frames():
     while True:
         if not is_camera_connected():
@@ -68,7 +78,7 @@ def generate_frames():
             placeholder = encode_mjpeg_frame(generate_status_frame())
             if placeholder is not None:
                 yield placeholder
-            time.sleep(0.5)
+                time.sleep(0.5)
             continue
 
         with CAMERA_LOCK:
@@ -85,30 +95,51 @@ def generate_frames():
             placeholder = encode_mjpeg_frame(generate_status_frame())
             if placeholder is not None:
                 yield placeholder
-            time.sleep(0.2)
+                time.sleep(0.2)
             continue
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, TARGET_COLOR_LOWER, TARGET_COLOR_UPPER)
-        contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        contours, _ = cv2.findContours(
+            mask.copy(),
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
 
         if len(contours) > 0:
             c = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(c)
-            center_x = x + w // 2
-            center_y = y + h // 2
+            area = cv2.contourArea(c)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.circle(frame, (center_x, center_y), 6, (0, 0, 255), -1)
-            cv2.putText(
-                frame,
-                f"({center_x}, {center_y})",
-                (x, max(30, y - 10)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (255, 255, 255),
-                2
-            )
+            if area >= MIN_CONTOUR_AREA:
+                x, y, w, h = cv2.boundingRect(c)
+                center_x = x + w // 2
+                center_y = y + h // 2
+
+                distance_cm = (REAL_OBJECT_WIDTH_CM * FX) / w if w > 0 else 0.0
+
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.circle(frame, (center_x, center_y), 6, (0, 0, 255), -1)
+
+                cv2.putText(
+                    frame,
+                    f"({center_x}, {center_y})",
+                    (x, max(30, y - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (255, 255, 255),
+                    2
+                )
+
+                cv2.putText(
+                    frame,
+                    f"Distance: {distance_cm:.2f} cm",
+                    (x, y + h + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2
+                )
 
         encoded = encode_mjpeg_frame(frame)
         if encoded is None:
