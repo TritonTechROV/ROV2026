@@ -1,0 +1,31 @@
+{
+  "button": [
+    "A",
+    "B",
+    "Y",
+    "X",
+    "LB",
+    "RB",
+    "LT",
+    "RT",
+    "BACK",
+    "START",
+    "LS",
+    "RS",
+    "DU",
+    "DD",
+    "DL",
+    "DR",
+    "HOME"
+  ],
+
+
+  "axis": [
+    "LS X",
+    "LS Y",
+    "RS X",
+    "RS Y",
+    "LT",
+    "RT"
+  ]
+}

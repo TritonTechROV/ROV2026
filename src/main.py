@@ -1,5 +1,5 @@
 from pathlib import Path
-import logging
+import logging, json
 
 from flask import Flask, Response, jsonify, render_template
 from flask_socketio import SocketIO
@@ -55,12 +55,20 @@ def get_source_revision() -> int:
 def index():
 	return render_template("dashboard.html")
 
+@app.route("/data")
+def data():
+        with open("src/config/xbox.json") as f:
+                labels = json.load(f)
+        return jsonify(labels)
+
+
 @app.route("/video_feed")
 def video_feed():
 	return Response(
 		generate_frames(),
 		mimetype="multipart/x-mixed-replace; boundary=frame",
 	)
+
 @app.route("/camera_status")
 def camera_status():
 	return jsonify({"connected": is_camera_connected()})
