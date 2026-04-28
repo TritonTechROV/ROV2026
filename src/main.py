@@ -1,3 +1,5 @@
+import serial
+
 from pathlib import Path
 import logging, json
 
@@ -31,6 +33,11 @@ socketio = SocketIO(
         cors_allowed_origins="*",
         async_mode="threading"
 )
+
+# ser = serial.Serial("/dev/ttyUSB1", 115200, timeout = 1)
+# ser.write("set fl 0\n".encode("ascii"))
+
+
 
 
 def iter_watched_files():
@@ -103,3 +110,4 @@ if __name__ == "__main__":
             allow_unsafe_werkzeug=True,
             extra_files=extra_files
     )
+

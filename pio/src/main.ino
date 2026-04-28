@@ -14,7 +14,7 @@ const int THRUST_MAX_PWM = 2000;  // Full forward microseconds
 const int THRUST_HALT_PWM = 1500; // Stopped
 
 // TODO: do this for each thruster
-const int FRONT_LEFT_ESC_PIN = 11; // or something
+const int FRONT_LEFT_ESC_PIN = 19; // or something
 const int FRONT_RIGHT_ESC_PIN = 12;
 
 struct Thruster {
@@ -41,7 +41,6 @@ std::vector<std::string> split(const std::string &str, char delimiter) {
   return tokens;
 }
 
-// TODO: after initializing each servo, wait half a second, and then tell each servo to go at the halt speed
 void setup() {
   Serial.begin(115200);
 
@@ -50,6 +49,7 @@ void setup() {
     entry.second.esc->attach(entry.second.pin);
     entry.second.esc->writeMicroseconds(THRUST_HALT_PWM);
   }
+  delay(100);
 }
 
 void loop() {
@@ -70,7 +70,7 @@ void loop() {
     if (commandComponents[0] == "set") {
       std::string thrusterName =
           commandComponents[1]; // get the ESC name from the command
-      float input = std::stof(commandComponents[2]) * (THRUST_MAX_PWM - THRUST_MIN_PWM) + THRUST_MIN_PWM; // convert value to a float and scales to the pwm range
+      float input = std::stof(commandComponents[2]) * (THRUST_MAX_PWM - THRUST_MIN_PWM) / 2 + THRUST_HALT_PWM; // convert value to a float and scales to the pwm range
       int pwmValue =
           constrain(input, THRUST_MIN_PWM,
                     THRUST_MAX_PWM);
