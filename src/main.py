@@ -12,9 +12,12 @@ from vision.camera import generate_frames, is_camera_connected
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("pi")
 
-# setup - paths
+# setup - config consts
 BASE_DIR = Path(__file__).resolve().parent
 CERT_DIR = BASE_DIR / "certs"
+
+HOST = "0.0.0.0"
+PORT = 5000
 
 # flask - create app
 app = Flask(
@@ -38,8 +41,6 @@ socketio = SocketIO(
 # ser.write("set fl 0\n".encode("ascii"))
 
 
-
-
 def iter_watched_files():
 	for path in BASE_DIR.rglob("*"):
 		if not path.is_file():
@@ -60,7 +61,11 @@ def get_source_revision() -> int:
 
 @app.route("/")
 def index():
-	return render_template("dashboard.html")
+	return render_template("index.html")
+
+@app.route("/camera")
+def camera():
+        return render_template("camera.html")
 
 @app.route("/data")
 def data():
@@ -102,12 +107,11 @@ if __name__ == "__main__":
     extra_files = [str(path) for path in iter_watched_files()]
     socketio.run(
             app,
-            host="0.0.0.0",
-            port=5000,
+            host=HOST,
+            port=PORT,
             ssl_context=(CERT_DIR / "cert.pem", CERT_DIR / "key.pem"),
             debug=False,
             use_reloader=True,
             allow_unsafe_werkzeug=True,
             extra_files=extra_files
     )
-

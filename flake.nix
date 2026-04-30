@@ -18,13 +18,18 @@
     in f system pkgs);
   in {
     devShells = allSystems (system: pkgs: {
-      default = pkgs.mkShell {
+      default = let 
+        pyEnv = (pkgs.python3.withPackages (ps: [
+          ps.flask
+          ps.flask-socketio
+          ps.opencv-python
+          ps.serialio
+        ]));
+      in pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
+          pyEnv
           opencv
           platformio
-          python3Packages.flask
-          python3Packages.flask-socketio
-          python3Packages.opencv-python
         ];
       };
     });
