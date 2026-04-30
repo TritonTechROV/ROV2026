@@ -1,4 +1,4 @@
-import serial
+from controller import Controller
 
 from pathlib import Path
 import logging, json
@@ -36,10 +36,6 @@ socketio = SocketIO(
         cors_allowed_origins="*",
         async_mode="threading"
 )
-
-# ser = serial.Serial("/dev/ttyUSB1", 115200, timeout = 1)
-# ser.write("set fl 0\n".encode("ascii"))
-
 
 def iter_watched_files():
 	for path in BASE_DIR.rglob("*"):
@@ -95,13 +91,13 @@ def source_revision():
 def handle_connect():
         log.info("Client connected")
 
+# intilize empty class for controller handler
+gpad = Controller()
+
 @socketio.on('controller')
 def handle_controller(data):
-        buttons = data.get("buttons") or []
-        axes = data.get("axes") or []
-        log.info(f"axes: {axes}")
-        log.info(f"buttons: {buttons}")
-
+        gpad.buttons = data.get("buttons")
+        gpad.axes = data.get("axes")
 
 if __name__ == "__main__":
     extra_files = [str(path) for path in iter_watched_files()]
