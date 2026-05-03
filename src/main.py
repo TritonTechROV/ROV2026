@@ -6,6 +6,7 @@ import logging, json
 from flask import Flask, Response, jsonify, render_template
 from flask_socketio import SocketIO
 
+from thruster_controller import set_outputs_from_controls
 from vision.camera import generate_frames, is_camera_connected
 
 # setup - logger
@@ -93,11 +94,31 @@ def handle_connect():
 
 # intilize empty class for controller handler
 gpad = Controller()
+YAW_WEIGHT = 0.5
+ROLL_WEIGHT = 0.5
+DEADBAND_THRESHOLD = 0.1
+
+def deadband(value, threshold=DEADBAND_THRESHOLD):
+        if abs(value) <= threshold:
+                return 0.0
+        sign = 1.0 if value > 0 else -1.0
+        return ((abs(value) - threshold) / (1.0 - threshold)) * sign
 
 @socketio.on('controller')
 def handle_controller(data):
-        gpad.buttons = data.get("buttons")
-        gpad.axes = data.get("axes")
+	gpad.buttons = data.get("buttons")
+	gpad.axes = data.get("axes")
+
+	axes = gpad.axes or []
+	x = deadband(axes[0] if len(axes) > 0 else 0.0)
+	y = -(deadband(axes[1] if len(axes) > 1 else 0.0))
+	yaw = YAW_WEIGHT * (deadband(axes[2] if len(axes) > 2 else 0.0))
+	z = deadband(axes[3] if len(axes) > 3 else 0.0)
+	roll = 0.0
+	if len(axes) > 5:
+		roll = ROLL_WEIGHT * (deadband(axes[5] if len(axes) > 5 else 0.0) - deadband(axes[4] if len(axes) > 4 else 0.0))
+
+	set_outputs_from_controls([x, y, z, roll, yaw])
 
 if __name__ == "__main__":
     extra_files = [str(path) for path in iter_watched_files()]
