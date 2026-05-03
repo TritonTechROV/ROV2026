@@ -36,10 +36,27 @@ def normalize_outputs(outputs):
                 outputs = [output / max_magnitude for output in outputs]
         return outputs
 
+def clamp_outputs(outputs):
+    MAX_SUM = 2
+    sum = 0
+
+    # absolute sum
+    for i in range(len(outputs)):
+        sum += abs(outputs[i])
+
+    scalar = MAX_SUM / sum
+
+    if sum > MAX_SUM:
+        for i in range(len(outputs)):
+            outputs[i] = outputs[i] * scalar
+
+    return outputs
+
 # controls: [x, y, z, roll (right tilt positive), yaw (counterclockwise positive)]
 def set_outputs_from_controls(controls):
         outputs = matrix_vector_mult(CONTROLS_TO_THRUSTER_TRANSFORMATION, controls)
         outputs = normalize_outputs(outputs)
+        outputs = clamp_outputs(outputs)
         for i in range(len(outputs)):
                 send_to_thruster(i + 1, outputs[i])
 
