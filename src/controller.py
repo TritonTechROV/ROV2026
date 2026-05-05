@@ -1,5 +1,6 @@
 # controller #
 import logging, json
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -9,7 +10,8 @@ class Controller:
     # controller input mapping
     @staticmethod
     def load_config():
-        with open("src/config/xbox.json") as f:
+        config_path = Path(__file__).resolve().parent / "config" / "xbox.json"
+        with open(config_path) as f:
             return json.load(f)
 
     # default to empty list

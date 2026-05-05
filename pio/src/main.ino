@@ -9,13 +9,17 @@
 // since there's only one servo, you can ignore the struct, 
 // but the control logic is different, and the pwm frequencies are too
 
-const int THRUST_MIN_PWM = 1000;  // Full reverse microseconds
-const int THRUST_MAX_PWM = 2000;  // Full forward microseconds
+const int THRUST_MIN_PWM = 1250;  // Half reverse microseconds (full is 1000)
+const int THRUST_MAX_PWM = 1750;  // Half forward microseconds (full is 2000)
 const int THRUST_HALT_PWM = 1500; // Stopped
 
 // TODO: do this for each thruster
 const int FRONT_LEFT_ESC_PIN = 19; // or something
-const int FRONT_RIGHT_ESC_PIN = 12;
+const int FRONT_RIGHT_ESC_PIN = 21;
+const int MIDDLE_LEFT_ESC_PIN = 5;
+const int MIDDLE_RIGHT_ESC_PIN = 18;
+const int BACK_LEFT_ESC_PIN = 22;
+const int BACK_RIGHT_ESC_PIN = 23;
 
 struct Thruster {
   int pin;
@@ -26,6 +30,10 @@ struct Thruster {
 std::map<std::string, Thruster> thrusterMap = {
     {"fl", {FRONT_LEFT_ESC_PIN, new Servo()}},  // front left
     {"fr", {FRONT_RIGHT_ESC_PIN, new Servo()}}, // front right
+    {"ml", {MIDDLE_LEFT_ESC_PIN, new Servo()}}, // middle left
+    {"mr", {MIDDLE_RIGHT_ESC_PIN, new Servo()}}, // middle right
+    {"bl", {BACK_LEFT_ESC_PIN, new Servo()}},  // back left
+    {"br", {BACK_RIGHT_ESC_PIN, new Servo()}}  // back right
 };
 
 // just splits a string into a vector of strings
