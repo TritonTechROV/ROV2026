@@ -9,8 +9,8 @@
 // since there's only one servo, you can ignore the struct, 
 // but the control logic is different, and the pwm frequencies are too
 
-const int THRUST_MIN_PWM = 1250;  // Half reverse microseconds (full is 1000)
-const int THRUST_MAX_PWM = 1750;  // Half forward microseconds (full is 2000)
+const int THRUST_MIN_PWM = 1100;  // Half reverse microseconds (full is 1000)
+const int THRUST_MAX_PWM = 1900;  // Half forward microseconds (full is 2000)
 const int THRUST_HALT_PWM = 1500; // Stopped
 
 // TODO: do this for each thruster
