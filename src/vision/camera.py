@@ -6,8 +6,9 @@ from threading import Lock
 TARGET_COLOR_LOWER = np.array([100, 150, 50])
 TARGET_COLOR_UPPER = np.array([140, 255, 255])
 
-RESOLUTION_PIXELS_WIDTH = 1920
-RESOLUTION_PIXELS_HEIGHT = 1080
+WIDTH = 1280
+HEIGHT = 720
+FPS=30
 CAMERA_INDEX = 0
 
 cam = None
@@ -17,15 +18,19 @@ CAMERA_LOCK = Lock()
 def open_camera() -> None:
     global cam
 
+    gst = (
+        f"v4l2src device=/dev/video0 ! "
+        f"videoconvert ! "
+        f"video/x-raw,framerate={FPS}/1,format=BGR ! "
+        #f"video/x-raw,format=BGR ! "
+        f"appsink drop=true max-buffers=1"
+    )
+    
     with CAMERA_LOCK:
         if cam is not None:
             cam.release()
 
-        cam = cv2.VideoCapture(CAMERA_INDEX)
-
-        if cam.isOpened():
-            cam.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_PIXELS_WIDTH)
-            cam.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION_PIXELS_HEIGHT)
+        cam = cv2.VideoCapture(gst, cv2.CAP_GSTREAMER)
 
         print("Camera opened:", cam.isOpened())
 
