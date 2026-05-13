@@ -19,13 +19,14 @@ def open_camera() -> None:
     global cam
 
     gst = (
-        f"v4l2src device=/dev/video0 ! "
-        f"videoconvert ! "
-        f"video/x-raw,framerate={FPS}/1,format=BGR ! "
-        #f"video/x-raw,format=BGR ! "
-        f"appsink drop=true max-buffers=1"
+    f"v4l2src device=/dev/video{CAMERA_INDEX} ! "
+    f"image/jpeg,width={WIDTH},height={HEIGHT},framerate={FPS}/1 ! "
+    "jpegdec ! "
+    "videoconvert ! "
+    "video/x-raw,format=BGR ! "
+    "appsink drop=true max-buffers=1 sync=false"
     )
-    
+
     with CAMERA_LOCK:
         if cam is not None:
             cam.release()
