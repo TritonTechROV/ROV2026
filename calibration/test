@@ -1,0 +1,10 @@
+import numpy as np, math
+data = np.load("calibration_result.npz")
+K  = data["camera_matrix"]
+fx, fy = K[0,0], K[1,1]
+W, H   = 1920, 1080
+
+fov_h = math.degrees(2 * math.atan(W / (2 * fx)))
+fov_v = math.degrees(2 * math.atan(H / (2 * fy)))
+print(f"Horizontal FoV: {fov_h:.2f}°")
+print(f"Vertical FoV:   {fov_v:.2f}°")

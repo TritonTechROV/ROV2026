@@ -6,8 +6,8 @@ from threading import Lock
 TARGET_COLOR_LOWER = np.array([100, 150, 50])
 TARGET_COLOR_UPPER = np.array([140, 255, 255])
 
-WIDTH = 1280
-HEIGHT = 720
+WIDTH = 1920
+HEIGHT = 1080
 FPS=30
 CAMERA_INDEX = 0
 

@@ -1,0 +1,60 @@
+{
+  "image_size": [
+    1920,
+    1080
+  ],
+  "rms_reprojection_error": 0.578545371979066,
+  "mean_reprojection_error": 0.5489239754883123,
+  "camera_matrix": [
+    [
+      624.495247531949,
+      0.0,
+      902.3833648732326
+    ],
+    [
+      0.0,
+      624.5641021005409,
+      560.7715820128757
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "dist_coeffs": [
+    -0.32208529403455655,
+    0.11889014301872933,
+    -0.0007583559413522792,
+    0.00012271207848374072,
+    -0.020946407561975713
+  ],
+  "used_images": [
+    "calib_images/calib0000.jpg",
+    "calib_images/calib0001.jpg",
+    "calib_images/calib0002.jpg",
+    "calib_images/calib0003.jpg",
+    "calib_images/calib0004.jpg",
+    "calib_images/calib0005.jpg",
+    "calib_images/calib0006.jpg",
+    "calib_images/calib0007.jpg",
+    "calib_images/calib0009.jpg",
+    "calib_images/calib0010.jpg",
+    "calib_images/calib0011.jpg",
+    "calib_images/calib0012.jpg"
+  ],
+  "per_image_errors": {
+    "calib0000.jpg": 0.344763,
+    "calib0001.jpg": 0.74881,
+    "calib0002.jpg": 0.706953,
+    "calib0003.jpg": 0.408319,
+    "calib0004.jpg": 0.82401,
+    "calib0005.jpg": 0.542437,
+    "calib0006.jpg": 0.58032,
+    "calib0007.jpg": 0.353482,
+    "calib0009.jpg": 0.713681,
+    "calib0010.jpg": 0.496981,
+    "calib0011.jpg": 0.398523,
+    "calib0012.jpg": 0.468807
+  }
+}

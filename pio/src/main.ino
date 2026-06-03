@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Servo.h>
+#include <ESP32Servo.h>
 #include <map>
 #include <sstream>
 #include <string>
@@ -20,11 +20,14 @@ const int MIDDLE_LEFT_ESC_PIN = 5;
 const int MIDDLE_RIGHT_ESC_PIN = 18;
 const int BACK_LEFT_ESC_PIN = 22;
 const int BACK_RIGHT_ESC_PIN = 23;
+const int SERVO_PIN = 2; // Default servo pin
 
 struct Thruster {
   int pin;
   Servo *esc;
 };
+
+Servo myServo;
 
 // This map lets you reference each thruster by short name.
 std::map<std::string, Thruster> thrusterMap = {
@@ -57,6 +60,8 @@ void setup() {
     entry.second.esc->attach(entry.second.pin);
     entry.second.esc->writeMicroseconds(THRUST_HALT_PWM);
   }
+  myServo.attach(SERVO_PIN);
+  myServo.writeMicroseconds(1200); // 1200 is typically neutral/center for servos
   delay(100);
 }
 
@@ -68,14 +73,18 @@ void loop() {
     std::string commandStd = command.c_str(); // converts the Arduino string to a cpp string for parsing
     std::vector<std::string> commandComponents = split(commandStd, ' '); // splits the commad into separate components
 
-    if (commandComponents.size() < 3) {
-      Serial.println("Error: use 'set [esc] [pwm]'");
+    if (commandComponents.size() < 2) {
+      Serial.println("Error: invalid command");
       return;
     }
 
     // This assumes the command is in the format "[instruction] [esc name]
     // [value]", e.g. "set fl 0.5" would make the esc go forward at 50% power
     if (commandComponents[0] == "set") {
+      if (commandComponents.size() < 3) {
+        Serial.println("Error: use 'set [esc] [pwm]'");
+        return;
+      }
       std::string thrusterName =
           commandComponents[1]; // get the ESC name from the command
       float input = std::stof(commandComponents[2]) * (THRUST_MAX_PWM - THRUST_MIN_PWM) / 2 + THRUST_HALT_PWM; // convert value to a float and scales to the pwm range
@@ -89,6 +98,10 @@ void loop() {
       } else {
         Serial.println("Error: Thruster not found");
       }
+    } else if (commandComponents[0] == "servo" && commandComponents.size() >= 2) {
+      int pwm = std::stoi(commandComponents[1]);
+      myServo.writeMicroseconds(pwm);
+      Serial.println("OK");
     }
   }
 }

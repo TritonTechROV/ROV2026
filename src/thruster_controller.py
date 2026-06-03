@@ -126,9 +126,22 @@ def send_to_thruster(thruster, speed):
                                 log.info("ESP32 response: %s", response)
                 except serial.SerialException as exc:
                         log.warning("Serial error when writing to %s: %s", getattr(connection, 'port', '<unknown>'), exc)
-                # set <thruster> <float [-1, 1]>
-                # -1 backwards, 1 forwards, 0 stopped
 
+def set_servo_angle(angle):
+        with serial_lock:
+                command = f"servo {int(angle)}\n".encode("ascii")
+                log.info("Sending servo command: %d", angle)
+                connection = get_serial_connection()
+                if connection is None:
+                        log.warning("No serial connection available for servo")
+                        return
+                try:
+                        connection.write(command)
+                        response = connection.readline().decode("ascii", errors="replace").strip()
+                        if response:
+                                log.info("ESP32 response: %s", response)
+                except serial.SerialException as exc:
+                        log.warning("Serial error when writing servo: %s", exc)
 
 def _ramp_loop():
         global _current_speeds, _target_speeds, _ramp_thread_running
