@@ -3,18 +3,18 @@
     1920,
     1080
   ],
-  "rms_reprojection_error": 0.578545371979066,
-  "mean_reprojection_error": 0.5489239754883123,
+  "rms_reprojection_error": 1.21318467445556,
+  "mean_reprojection_error": 1.07808970162788,
   "camera_matrix": [
     [
-      624.495247531949,
+      618.7123621745575,
       0.0,
-      902.3833648732326
+      907.6585026883331
     ],
     [
       0.0,
-      624.5641021005409,
-      560.7715820128757
+      617.5924868007079,
+      555.3777761069663
     ],
     [
       0.0,
@@ -23,11 +23,20 @@
     ]
   ],
   "dist_coeffs": [
-    -0.32208529403455655,
-    0.11889014301872933,
-    -0.0007583559413522792,
-    0.00012271207848374072,
-    -0.020946407561975713
+    2.188036008646017,
+    0.8252247414119365,
+    0.0001429391554254227,
+    -6.540836179691801e-05,
+    0.02185112640727355,
+    2.5293059579326336,
+    1.505139864474656,
+    0.1504723862961194,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
   ],
   "used_images": [
     "calib_images/calib0000.jpg",
@@ -38,23 +47,31 @@
     "calib_images/calib0005.jpg",
     "calib_images/calib0006.jpg",
     "calib_images/calib0007.jpg",
+    "calib_images/calib0008.jpg",
     "calib_images/calib0009.jpg",
     "calib_images/calib0010.jpg",
     "calib_images/calib0011.jpg",
-    "calib_images/calib0012.jpg"
+    "calib_images/calib0012.jpg",
+    "calib_images/calib0013.jpg",
+    "calib_images/calib0014.jpg",
+    "calib_images/calib0015.jpg"
   ],
   "per_image_errors": {
-    "calib0000.jpg": 0.344763,
-    "calib0001.jpg": 0.74881,
-    "calib0002.jpg": 0.706953,
-    "calib0003.jpg": 0.408319,
-    "calib0004.jpg": 0.82401,
-    "calib0005.jpg": 0.542437,
-    "calib0006.jpg": 0.58032,
-    "calib0007.jpg": 0.353482,
-    "calib0009.jpg": 0.713681,
-    "calib0010.jpg": 0.496981,
-    "calib0011.jpg": 0.398523,
-    "calib0012.jpg": 0.468807
+    "calib0000.jpg": 0.820055,
+    "calib0001.jpg": 0.630939,
+    "calib0002.jpg": 0.585396,
+    "calib0003.jpg": 0.780416,
+    "calib0004.jpg": 1.577812,
+    "calib0005.jpg": 0.85598,
+    "calib0006.jpg": 1.140931,
+    "calib0007.jpg": 0.746433,
+    "calib0008.jpg": 0.799892,
+    "calib0009.jpg": 0.656832,
+    "calib0010.jpg": 1.10762,
+    "calib0011.jpg": 1.159126,
+    "calib0012.jpg": 1.738162,
+    "calib0013.jpg": 1.779414,
+    "calib0014.jpg": 1.077612,
+    "calib0015.jpg": 1.792814
   }
 }

@@ -1,9 +1,9 @@
 """
 ChArUco Board Camera Calibration Script
 ========================================
-Board:         8x8 squares
-Square length: 0.026 m
-Marker length: 0.0195 m
+Board:         8x10 squares
+Square length: 0.02286 m
+Marker length: 0.01778 m
 Resolution:    1920 x 1080
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 # Configuration
 # ---------------------------------------------------------------------------
 BOARD_COLS        = 8          # number of squares horizontally
-BOARD_ROWS        = 8          # number of squares vertically
+BOARD_ROWS        = 10         # number of squares vertically
 SQUARE_LENGTH     = 0.02286      # metres
 MARKER_LENGTH     = 0.01778     # metres
 IMAGE_WIDTH       = 1920
@@ -128,10 +128,10 @@ def calibrate(board, all_corners, all_ids, image_size):
          [ 0, fy, cy],
          [ 0,  0,  1]], dtype=np.float64
     )
-    dist_coeffs_init = np.zeros((5, 1), dtype=np.float64)
+    dist_coeffs_init = np.zeros((8, 1), dtype=np.float64)
 
     flags = (
-        cv2.CALIB_USE_INTRINSIC_GUESS
+        cv2.CALIB_USE_INTRINSIC_GUESS | cv2.CALIB_RATIONAL_MODEL
         # Uncomment lines below to fix specific parameters during optimisation:
         # | cv2.CALIB_FIX_PRINCIPAL_POINT
         # | cv2.CALIB_FIX_ASPECT_RATIO
@@ -263,7 +263,7 @@ def main():
     print(f"\n{'='*60}")
     print(f"RMS reprojection error : {rms:.4f} px  (good < 1.0 px)")
     print(f"\nCamera matrix:\n{camera_matrix}")
-    print(f"\nDistortion coefficients (k1 k2 p1 p2 k3):\n{dist_coeffs.flatten()}")
+    print(f"\nDistortion coefficients:\n{dist_coeffs.flatten()}")
     print(f"{'='*60}")
 
     print("\nPer-image reprojection errors:")
