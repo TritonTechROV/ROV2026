@@ -21,14 +21,16 @@ CONTROLS_TO_THRUSTER_TRANSFORMATION = [
         [1, 1, 0, 0, 1]
 ]
 
+REVERSE_THRUST_MULTIPLIER = 1.3
+
 THRUSTER_NAMES = ["fl", "fr", "ml", "mr", "bl", "br"]
 
 SERIAL_PATH = "/dev/ttyUSB1"
 ser = None
 serial_lock = threading.Lock()
 # Ramping configuration
-RAMP_RATE = 1.0 # max change in speed units per second (0..1)
-RAMP_FREQUENCY = 20.0  # Hz, how often to update outputs
+RAMP_RATE = 2.0 # max change in speed units per second (0..1)
+RAMP_FREQUENCY = 100.0  # Hz, how often to update outputs
 
 # runtime ramp state
 _ramp_lock = threading.Lock()
@@ -73,6 +75,12 @@ def matrix_vector_mult(matrix, vector):
                 result.append(axis_sum)
         return result
 
+def multiply_for_reverse_thrust(outputs):
+        for i in range(len(outputs)):
+                if outputs[i] < 0:
+                        outputs[i] *= REVERSE_THRUST_MULTIPLIER
+        return outputs
+
 def normalize_outputs(outputs):
         max_magnitude = max(abs(output) for output in outputs)
         if max_magnitude > 1:
@@ -100,6 +108,7 @@ def clamp_outputs(outputs):
 # controls: [x, y, z, roll (right tilt positive), yaw (counterclockwise positive)]
 def set_outputs_from_controls(controls):
         outputs = matrix_vector_mult(CONTROLS_TO_THRUSTER_TRANSFORMATION, controls)
+        outputs = multiply_for_reverse_thrust(outputs)
         outputs = normalize_outputs(outputs)
         outputs = clamp_outputs(outputs)
         # set targets for ramping thread instead of immediately writing to serial
