@@ -40,17 +40,14 @@ LABEL_COLOR  = (255, 255, 255)   # Coordinate text
 cam         = None
 CAMERA_LOCK = Lock()
 
-
 def _build_gstreamer_pipeline() -> str:
     return (
-        f"v4l2src device=/dev/video{CAMERA_INDEX} ! "
-        f"image/jpeg,width={WIDTH},height={HEIGHT},framerate={FPS}/1 ! "
-        "jpegdec ! "
+        "libcamerasrc camera-name=/base/axi/pcie@1000120000/rp1/i2c@88000/ov5647@36 ! "
+        "video/x-raw, width=960, height=540, framerate=30/1, format=YUY2 ! "
         "videoconvert ! "
-        "video/x-raw,format=BGR ! "
+        "video/x-raw, format=BGR ! "
         "appsink drop=true max-buffers=1 sync=false"
     )
-
 
 def open_camera() -> None:
     global cam
