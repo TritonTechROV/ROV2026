@@ -8,26 +8,26 @@ window.addEventListener("DOMContentLoaded", function () {
 (function liveReload() {
     let currentRevision = null;
     let sawBackendDisconnect = false;
-    const stream = document.getElementById("camera-stream");
-    const cameraStatus = document.getElementById("camera-status");
+    const mainStream = document.getElementById("main-camera-stream");
+    const mainStatus = document.getElementById("main-camera-status");
 
     function showCameraDisconnected() {
-        stream.style.display = "none";
-        cameraStatus.style.display = "block";
+        mainStream.style.display = "none";
+        mainStatus.style.display = "block";
     }
 
     function showCameraConnected() {
-        stream.style.display = "inline-block";
-        cameraStatus.style.display = "none";
+        mainStream.style.display = "inline-block";
+        mainStatus.style.display = "none";
     }
 
     function restartStream() {
-        stream.src = "/video_feed?t=" + Date.now();
+        mainStream.src = "/main_video_feed?t=" + Date.now();
     }
 
     async function refreshCameraStatus() {
         try {
-            const response = await fetch("/camera_status", {
+            const response = await fetch("/main_camera_status", {
                 cache: "no-store",
             });
             if (!response.ok) {
@@ -38,7 +38,7 @@ window.addEventListener("DOMContentLoaded", function () {
             const payload = await response.json();
             if (payload.connected) {
                 showCameraConnected();
-                if (!stream.complete || stream.naturalWidth === 0) {
+                if (!mainStream.complete || mainStream.naturalWidth === 0) {
                     restartStream();
                 }
             } else {
@@ -49,7 +49,7 @@ window.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    stream.addEventListener("error", showCameraDisconnected);
+    mainStream.addEventListener("error", showCameraDisconnected);
 
     async function checkRevision() {
         try {

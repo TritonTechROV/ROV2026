@@ -7,189 +7,161 @@ from threading import Lock
 # CONFIGURATION
 # =============================================================================
 
-# --- Camera ---
-CAMERA_INDEX = 0        # /dev/videoN index
-WIDTH        = 1920     # Capture width in pixels
-HEIGHT       = 1080     # Capture height in pixels
-FPS          = 30       # Capture framerate
+# --- USB Camera (V4L2 + OpenCV, color detection) ---
+USB_DEVICE   = "/dev/video0"
+WIDTH        = 1920
+HEIGHT       = 1080
+FPS          = 30
 
-# --- Color Target (HSV space) ---
-# Hue: 0–179. Set HUE_MIN > HUE_MAX to wrap around 180 (e.g. for red).
-# Saturation / Value: 0–255.
+# --- CSI Camera (libcamera GStreamer, passthrough only) ---
+CSI_DEVICE   = "/base/axi/pcie@1000120000/rp1/i2c@88000/ov5647@36"
+CSI_WIDTH    = 960
+CSI_HEIGHT   = 540
+CSI_FPS      = 30
+
+# --- Color Target (HSV) ---
 TARGET_HUE_MIN = 178
 TARGET_HUE_MAX = 5
 TARGET_SAT_MIN = 120
 TARGET_SAT_MAX = 250
 TARGET_VAL_MIN = 50
-TARGET_VAL_MAX = 255 
+TARGET_VAL_MAX = 255
 
 # --- Detection ---
-# Contours whose pixel area is AT OR ABOVE this value will each get their own
-# bounding box drawn. Contours below this value are ignored entirely.
 MIN_CONTOUR_AREA = 400  # pixels²
 
 # --- Overlay colours (BGR) ---
-BOX_COLOR    = (0,   255,   0)   # Bounding box
-CENTER_COLOR = (0,     0, 255)   # Center dot
-LABEL_COLOR  = (255, 255, 255)   # Coordinate text
+BOX_COLOR    = (0,   255,   0)
+CENTER_COLOR = (0,     0, 255)
+LABEL_COLOR  = (255, 255, 255)
 
 # =============================================================================
-# CAMERA
+# INTERNAL STATE
 # =============================================================================
 
-cam         = None
-CAMERA_LOCK = Lock()
+_cam  = None
+_lock = Lock()
 
-def _build_gstreamer_pipeline() -> str:
+
+# =============================================================================
+# CAMERA OPEN / STATUS
+# =============================================================================
+
+def _gst_pipeline() -> str:
     return (
-        "libcamerasrc camera-name=/base/axi/pcie@1000120000/rp1/i2c@88000/ov5647@36 ! "
-        "video/x-raw, width=960, height=540, framerate=30/1, format=YUY2 ! "
-        "videoconvert ! "
-        "video/x-raw, format=BGR ! "
-        "appsink drop=true max-buffers=1 sync=false"
+        f"v4l2src device={USB_DEVICE} ! "
+        f"image/jpeg,width={WIDTH},height={HEIGHT},framerate={FPS}/1 ! "
+        "jpegdec ! videoconvert ! appsink"
     )
 
+
 def open_camera() -> None:
-    global cam
-    with CAMERA_LOCK:
-        if cam is not None:
-            cam.release()
-        cam = cv2.VideoCapture(_build_gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-        print("Camera opened:", cam.isOpened())
+    global _cam
+    with _lock:
+        if _cam is not None:
+            _cam.release()
+        _cam = cv2.VideoCapture(_gst_pipeline(), cv2.CAP_GSTREAMER)
+        print(f"[usb_camera] opened: {_cam.isOpened()}")
 
 
-def is_camera_connected() -> bool:
-    global cam
-    if cam is None:
+def is_connected() -> bool:
+    global _cam
+    if _cam is None:
         open_camera()
-
-    with CAMERA_LOCK:
-        connected = cam is not None and cam.isOpened()
-
-    if not connected:
+    with _lock:
+        ok = _cam is not None and _cam.isOpened()
+    if not ok:
         open_camera()
-        with CAMERA_LOCK:
-            connected = cam is not None and cam.isOpened()
-
-    return connected
+        with _lock:
+            ok = _cam is not None and _cam.isOpened()
+    return ok
 
 
 # =============================================================================
 # COLOR MASKING
 # =============================================================================
 
-def get_color_mask(
-    hsv_img: np.ndarray,
-    h_min: int, h_max: int,
-    s_min: int, s_max: int,
-    v_min: int, v_max: int,
-) -> np.ndarray:
-    """
-    Return a binary mask for pixels matching the given HSV range.
-    Handles hue wrap-around automatically when h_min > h_max (e.g. red).
-    """
-    if h_min <= h_max:
-        lower = np.array([h_min, s_min, v_min])
-        upper = np.array([h_max, s_max, v_max])
-        return cv2.inRange(hsv_img, lower, upper)
+def _color_mask(hsv: np.ndarray) -> np.ndarray:
+    h_min, h_max = TARGET_HUE_MIN, TARGET_HUE_MAX
+    lo = (TARGET_SAT_MIN, TARGET_VAL_MIN)
+    hi = (TARGET_SAT_MAX, TARGET_VAL_MAX)
 
-    # Wrap-around: split into [0 … h_max] ∪ [h_min … 179]
-    mask_low  = cv2.inRange(hsv_img, np.array([0,     s_min, v_min]),
-                                     np.array([h_max, s_max, v_max]))
-    mask_high = cv2.inRange(hsv_img, np.array([h_min, s_min, v_min]),
-                                     np.array([179,   s_max, v_max]))
-    return cv2.bitwise_or(mask_low, mask_high)
+    if h_min <= h_max:
+        return cv2.inRange(hsv,
+                           np.array([h_min, *lo]),
+                           np.array([h_max, *hi]))
+
+    # Hue wrap-around (e.g. red)
+    m_lo = cv2.inRange(hsv, np.array([0,     *lo]), np.array([h_max, *hi]))
+    m_hi = cv2.inRange(hsv, np.array([h_min, *lo]), np.array([179,   *hi]))
+    return cv2.bitwise_or(m_lo, m_hi)
 
 
 # =============================================================================
 # DRAWING
 # =============================================================================
 
-def draw_detections(frame: np.ndarray, contours: list) -> None:
-    """
-    Draw a bounding box, center dot, and coordinate label for every contour
-    whose area meets or exceeds MIN_CONTOUR_AREA.
-    """
+def _draw_detections(frame: np.ndarray, contours: list) -> None:
     for contour in contours:
         if cv2.contourArea(contour) < MIN_CONTOUR_AREA:
             continue
-
         x, y, w, h = cv2.boundingRect(contour)
         cx, cy = x + w // 2, y + h // 2
-
         cv2.rectangle(frame, (x, y), (x + w, y + h), BOX_COLOR, 2)
         cv2.circle(frame, (cx, cy), 6, CENTER_COLOR, -1)
         cv2.putText(
-            frame,
-            f"({cx}, {cy})",
+            frame, f"({cx}, {cy})",
             (x, max(30, y - 10)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            LABEL_COLOR,
-            2,
+            cv2.FONT_HERSHEY_SIMPLEX, 0.8, LABEL_COLOR, 2,
         )
 
 
 # =============================================================================
-# FRAME GENERATION
+# MJPEG HELPERS
 # =============================================================================
 
-def _encode_mjpeg(frame: np.ndarray) -> bytes | None:
-    success, buffer = cv2.imencode(".jpg", frame)
-    if not success:
+def _encode(frame: np.ndarray) -> bytes | None:
+    ok, buf = cv2.imencode(".jpg", frame)
+    if not ok:
         return None
-    return (
-        b"--frame\r\n"
-        b"Content-Type: image/jpeg\r\n\r\n"
-        + buffer.tobytes()
-        + b"\r\n"
-    )
+    return b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + buf.tobytes() + b"\r\n"
 
 
-def _placeholder_frame() -> np.ndarray:
-    """Black frame returned while the camera is unavailable."""
+def _placeholder() -> np.ndarray:
     return np.zeros((480, 854, 3), dtype=np.uint8)
 
 
+# =============================================================================
+# PUBLIC GENERATOR
+# =============================================================================
+
 def generate_frames():
-    """
-    Infinite generator that yields MJPEG-encoded frames.
-    Each frame has bounding boxes drawn around every detected color blob
-    that is at least MIN_CONTOUR_AREA pixels² in size.
-    """
+    """Yield MJPEG frames with color-detection overlays."""
     while True:
-        if not is_camera_connected():
-            open_camera()
-            yield _encode_mjpeg(_placeholder_frame())
+        if not is_connected():
+            yield _encode(_placeholder())
             time.sleep(0.5)
             continue
 
-        with CAMERA_LOCK:
-            local_cam = cam
+        with _lock:
+            local = _cam
 
-        if local_cam is None:
+        if local is None:
             time.sleep(0.2)
             continue
 
-        ret, frame = local_cam.read()
+        ret, frame = local.read()
         if not ret:
             open_camera()
-            yield _encode_mjpeg(_placeholder_frame())
+            yield _encode(_placeholder())
             time.sleep(0.2)
             continue
 
-        # Detect target colour
         hsv      = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask     = get_color_mask(
-            hsv,
-            TARGET_HUE_MIN, TARGET_HUE_MAX,
-            TARGET_SAT_MIN, TARGET_SAT_MAX,
-            TARGET_VAL_MIN, TARGET_VAL_MAX,
-        )
+        mask     = _color_mask(hsv)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _draw_detections(frame, contours)
 
-        draw_detections(frame, contours)
-
-        encoded = _encode_mjpeg(frame)
+        encoded = _encode(frame)
         if encoded:
             yield encoded

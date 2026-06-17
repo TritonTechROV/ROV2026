@@ -7,7 +7,8 @@ from flask import Flask, Response, jsonify, render_template
 from flask_socketio import SocketIO
 
 from thruster_controller import set_outputs_from_controls, set_servo_angle
-from vision.camera import generate_frames, is_camera_connected
+from vision.camera import generate_frames
+from vision.bottom_camera import generate_frames as generate_bottom_frames
 
 # setup - logger
 logging.basicConfig(level=logging.INFO)
@@ -66,20 +67,27 @@ def camera():
 
 @app.route("/data")
 def data():
-        with open("src/config/xbox.json") as f:
-                labels = json.load(f)
-        return jsonify(labels)
+    with open("src/config/xbox.json") as f:
+        labels = json.load(f)
+    return jsonify(labels)
 
-@app.route("/video_feed")
-def video_feed():
-	return Response(
-		generate_frames(),
-		mimetype="multipart/x-mixed-replace; boundary=frame",
-	)
+@app.route("/main_video_feed")
+def main_video_feed():
+    return Response(
+        generate_frames(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
 
-@app.route("/camera_status")
+@app.route("/bottom_video_feed")
+def bottom_video_feed():
+    return Response(
+        generate_bottom_frames(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
+
+@app.route("/main_camera_status")
 def camera_status():
-	return jsonify({"connected": is_camera_connected()})
+	return jsonify({"connected": True})
 
 
 @app.route("/__source_revision")
@@ -116,7 +124,7 @@ def handle_controller(data):
 	y = -(deadband(axes[1] if len(axes) > 1 else 0.0))
 	yaw = YAW_WEIGHT * (deadband(axes[2] if len(axes) > 2 else 0.0))
 	z = deadband(axes[3] if len(axes) > 3 else 0.0)
-	
+
 	lt = gpad.button('LT') if len(gpad.buttons) > gpad.BUTTON_INDEX['LT'] else 0.0
 	rt = gpad.button('RT') if len(gpad.buttons) > gpad.BUTTON_INDEX['RT'] else 0.0
 	roll = ROLL_WEIGHT * (rt - lt)
@@ -125,13 +133,13 @@ def handle_controller(data):
 
 	lb = gpad.button('LB') if len(gpad.buttons) > gpad.BUTTON_INDEX['LB'] else 0
 	rb = gpad.button('RB') if len(gpad.buttons) > gpad.BUTTON_INDEX['RB'] else 0
-	
+
 	new_pwm = servo_pwm
 	if rb:
 		new_pwm = 1200
 	elif lb:
 		new_pwm = 600
-		
+
 	if new_pwm != servo_pwm:
 		servo_pwm = new_pwm
 		set_servo_angle(servo_pwm)
