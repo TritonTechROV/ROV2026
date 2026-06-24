@@ -6,21 +6,12 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- <div class="tab"> -->
-        <!-- <button class="tablinks" onclick="openTab(event, 'camera_main')">Camera Main</button> -->
-        <!-- <button class="tablinks" onclick="openTab(event, 'controller')">Controller</button> -->
-    <!-- </div> -->
-
-    <!-- <div id="camera_main" class="tabcontent"> -->
         <img id="main-camera-stream" src="/main_video_feed" alt="No Camera Stream :(">
         <div id="main-camera-status" style="display:none">Main camera not connected</div>
         <img id="bottom-camera-stream" src="/bottom_video_feed" alt="No Camera Stream :(">
         <div id="bottom-camera-status" style="display:none">Bottom camera not connected</div>
 
-    <!-- </div> -->
-
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="text/javascript" src="/static/interaction.js"></script>
     <script type="text/javascript" src="/static/stream_monitor.js" defer></script>
     <script type="text/javascript" src="/static/gamepad.js" defer></script>
 </body>
