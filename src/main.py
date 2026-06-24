@@ -66,7 +66,7 @@ def camera():
         return render_template("camera.html")
 
 @app.route("/dimensions")
-def camera():
+def send_dimensions():
         return {
                 "centerBoxHeight": 670,
                 "leftBoxWidth": 760,
