@@ -65,6 +65,16 @@ def index():
 def camera():
         return render_template("camera.html")
 
+@app.route("/dimensions")
+def camera():
+        return {
+                "centerBoxHeight": 670,
+                "leftBoxWidth": 760,
+                "rightBoxWidth": 20
+        }
+
+
+
 @app.route("/data")
 def data():
     with open("src/config/xbox.json") as f:
@@ -93,7 +103,6 @@ def camera_status():
 @app.route("/__source_revision")
 def source_revision():
 	return jsonify({"revision": str(get_source_revision())})
-
 
 @socketio.on('connect')
 def handle_connect():

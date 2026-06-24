@@ -18,7 +18,7 @@
     in f system pkgs);
   in {
     devShells = allSystems (system: pkgs: {
-      default = let 
+      default = let
         pyEnv = (pkgs.python3.withPackages (ps: [
           ps.flask
           ps.flask-socketio
@@ -30,6 +30,7 @@
           pyEnv
           opencv
           platformio
+          nodejs
         ];
       };
     });
