@@ -5,6 +5,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import fontData from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 const _d = await fetch('/dimensions').then(r => r.json());
 var centerBoxHeight = _d.centerBoxHeight;
@@ -23,7 +24,6 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setAnimationLoop(animate);
 document.body.appendChild(renderer.domElement);
 
 const centerBoxGeometry = new THREE.BoxGeometry(CENTER_BOX_WIDTH, centerBoxHeight, ALL_BOX_DEPTH);
@@ -40,7 +40,7 @@ const leftLineGeo = new LineSegmentsGeometry().fromEdgesGeometry(leftEdgesGeomet
 
 const material = new LineMaterial({
   color: 0xffffff,
-  linewidth: 2,
+  linewidth: 5,
   resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
 });
 
@@ -79,10 +79,10 @@ const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
 
 const textLoader = new FontLoader();
-const textFont = await textLoader.loadAsync( 'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json' );
+const textFont = textLoader.parse(fontData);
 const textConfig = {
 	font: textFont,
-	size: 0.1,
+	size: 0.075,
 	depth: 0.01,
 	curveSegments: 12
 }
@@ -112,15 +112,19 @@ scene.add(leftDimensionMesh);
 scene.add(rightDimensionMesh);
 scene.add(centerDimensionMesh);
 
+renderer.setAnimationLoop(animate);
+
 setInterval(async () => {
   const d = await fetch('/dimensions').then(r => r.json());
   if (d.centerBoxHeight !== centerBoxHeight || d.leftBoxWidth !== leftBoxWidth || d.rightBoxWidth !== rightBoxWidth) {
     centerBoxHeight = d.centerBoxHeight;
     leftBoxWidth = d.leftBoxWidth;
     rightBoxWidth = d.rightBoxWidth;
-    updateDimensionText(leftDimensionMesh, `${(leftBoxWidth * 100).toFixed(1)}cm`);
-    updateDimensionText(centerDimensionMesh, `${(centerBoxHeight * 100).toFixed(1)}cm`);
-    updateDimensionText(rightDimensionMesh, `${(rightBoxWidth * 100).toFixed(1)}cm`);
+    updateDimensionText(leftDimensionMesh, `${(leftBoxWidth * 100).toFixed(3)}cm`);
+    updateDimensionText(centerDimensionMesh, `${(centerBoxHeight * 100).toFixed(3)}cm`);
+    updateDimensionText(rightDimensionMesh, `${(rightBoxWidth * 100).toFixed(3)}cm`);
+
+	
   }
 }, 500);
 
@@ -157,6 +161,14 @@ function animate(time) {
 	tagBackRight.position.x = CENTER_BOX_WIDTH/2 + rightBoxWidth - TAG_WIDTH/2;
 	tagFrontRight.position.y = TAG_HEIGHT/2;
 	tagBackRight.position.y = TAG_HEIGHT/2;
+
+	centerDimensionMesh.position.y = centerBoxHeight + 0.1;
+
+	leftDimensionMesh.position.y = LEFT_BOX_HEIGHT + 0.1;
+	leftDimensionMesh.position.x = -CENTER_BOX_WIDTH/2 - leftBoxWidth/2;	
+
+	rightDimensionMesh.position.y = RIGHT_BOX_HEIGHT + 0.1;
+	rightDimensionMesh.position.x = CENTER_BOX_WIDTH/2 + rightBoxWidth/2;
 
 	controls.update();
 

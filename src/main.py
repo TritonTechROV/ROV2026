@@ -68,12 +68,10 @@ def camera():
 @app.route("/dimensions")
 def send_dimensions():
         return {
-                "centerBoxHeight": 670,
-                "leftBoxWidth": 760,
-                "rightBoxWidth": 20
+                "centerBoxHeight": 0.8,
+                "leftBoxWidth": 0.75,
+                "rightBoxWidth": 0.5
         }
-
-
 
 @app.route("/data")
 def data():
@@ -154,6 +152,28 @@ def handle_controller(data):
 		set_servo_angle(servo_pwm)
 
 if __name__ == "__main__":
+    import subprocess, atexit, os, signal
+
+    # Start the Vite frontend dev server alongside the Flask server.
+    # Only launch it from the parent/monitor process so it survives werkzeug
+    # reloader restarts without trying to rebind port 5002 each time.
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        frontend_dir = BASE_DIR / "frontend"
+        vite_proc = subprocess.Popen(["npm", "run", "dev"], cwd=str(frontend_dir))
+
+        def _kill_vite():
+            if vite_proc.poll() is None:
+                vite_proc.terminate()
+                vite_proc.wait()
+
+        atexit.register(_kill_vite)
+
+        def _sigterm_handler(signum, frame):
+            _kill_vite()
+            raise SystemExit(0)
+
+        signal.signal(signal.SIGTERM, _sigterm_handler)
+
     extra_files = [str(path) for path in iter_watched_files()]
     socketio.run(
             app,

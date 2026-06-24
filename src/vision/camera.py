@@ -1,3 +1,5 @@
+import glob
+import subprocess
 import cv2
 import numpy as np
 import time
@@ -8,10 +10,26 @@ from threading import Lock
 # =============================================================================
 
 # --- USB Camera (V4L2 + OpenCV, color detection) ---
-USB_DEVICE   = "/dev/video0"
-WIDTH        = 1920
-HEIGHT       = 1080
-FPS          = 30
+def _find_usb_camera() -> str:
+    for dev in sorted(glob.glob("/dev/video*")):
+        try:
+            out = subprocess.check_output(
+                ["v4l2-ctl", "--device", dev, "--list-formats"],
+                stderr=subprocess.DEVNULL, timeout=1, text=True,
+            )
+            if "MJPG" in out:
+                print(f"[usb_camera] found at {dev}")
+                return dev
+        except Exception:
+            continue
+    raise RuntimeError("No MJPEG-capable USB camera found on any /dev/video* device")
+
+USB_DEVICE    = _find_usb_camera()
+WIDTH         = 1920   # capture resolution (must be a native camera resolution)
+HEIGHT        = 1080
+FPS           = 30
+OUT_WIDTH     = 960    # scaled output resolution
+OUT_HEIGHT    = 540
 
 # --- CSI Camera (libcamera GStreamer, passthrough only) ---
 CSI_DEVICE   = "/base/axi/pcie@1000120000/rp1/i2c@88000/ov5647@36"
@@ -51,7 +69,10 @@ def _gst_pipeline() -> str:
     return (
         f"v4l2src device={USB_DEVICE} ! "
         f"image/jpeg,width={WIDTH},height={HEIGHT},framerate={FPS}/1 ! "
-        "jpegdec ! videoconvert ! appsink"
+        "jpegdec ! "
+        f"videoscale ! video/x-raw,width={OUT_WIDTH},height={OUT_HEIGHT} ! "
+        "videoconvert ! "
+        "appsink drop=true max-buffers=1 sync=false"
     )
 
 
