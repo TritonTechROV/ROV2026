@@ -3,6 +3,7 @@ import subprocess
 import cv2
 import numpy as np
 import time
+import threading
 from threading import Lock
 
 # =============================================================================
@@ -37,16 +38,16 @@ CSI_WIDTH    = 960
 CSI_HEIGHT   = 540
 CSI_FPS      = 30
 
-# --- Color Target (HSV) ---
-TARGET_HUE_MIN = 178
-TARGET_HUE_MAX = 5
-TARGET_SAT_MIN = 120
-TARGET_SAT_MAX = 250
-TARGET_VAL_MIN = 50
+# --- Color Target (HSV, OpenCV scale: H 0-179, S 0-255, V 0-255) ---
+TARGET_HUE_MIN = 160
+TARGET_HUE_MAX = 10
+TARGET_SAT_MIN = 50
+TARGET_SAT_MAX = 140
+TARGET_VAL_MIN = 100
 TARGET_VAL_MAX = 255
 
 # --- Detection ---
-MIN_CONTOUR_AREA = 400  # pixels²
+MIN_CONTOUR_AREA = 300  # pixels²
 
 # --- Overlay colours (BGR) ---
 BOX_COLOR    = (0,   255,   0)
@@ -59,6 +60,16 @@ LABEL_COLOR  = (255, 255, 255)
 
 _cam  = None
 _lock = Lock()
+
+_latest_encoded: "bytes | None" = None
+_encoded_lock   = Lock()
+_capture_started = False
+_capture_lock    = Lock()
+
+_latest_raw_frame: "np.ndarray | None" = None
+_raw_frame_lock  = Lock()
+_latest_contour_bboxes: list = []
+_bboxes_lock     = Lock()
 
 
 # =============================================================================
@@ -153,14 +164,17 @@ def _placeholder() -> np.ndarray:
 
 
 # =============================================================================
-# PUBLIC GENERATOR
+# BACKGROUND CAPTURE THREAD
 # =============================================================================
 
-def generate_frames():
-    """Yield MJPEG frames with color-detection overlays."""
+_last_debug_time = 0
+
+def _run_capture():
+    global _latest_encoded, _last_debug_time
     while True:
         if not is_connected():
-            yield _encode(_placeholder())
+            with _encoded_lock:
+                _latest_encoded = _encode(_placeholder())
             time.sleep(0.5)
             continue
 
@@ -174,15 +188,87 @@ def generate_frames():
         ret, frame = local.read()
         if not ret:
             open_camera()
-            yield _encode(_placeholder())
+            with _encoded_lock:
+                _latest_encoded = _encode(_placeholder())
             time.sleep(0.2)
             continue
 
         hsv      = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        now = time.time()
+        if now - _last_debug_time >= 2.0:
+            _last_debug_time = now
+            cy, cx = frame.shape[0] // 2, frame.shape[1] // 2
+            h, s, v = hsv[cy, cx]
+            print(f"[hsv_debug] center pixel → H={h} S={s} V={v}  "
+                  f"(std: H={h*2}° S={s/255*100:.1f}% V={v/255*100:.1f}%)")
+
         mask     = _color_mask(hsv)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        valid_bboxes = [
+            list(cv2.boundingRect(c))
+            for c in contours
+            if cv2.contourArea(c) >= MIN_CONTOUR_AREA
+        ]
+        with _raw_frame_lock:
+            global _latest_raw_frame
+            _latest_raw_frame = frame.copy()
+        with _bboxes_lock:
+            global _latest_contour_bboxes
+            _latest_contour_bboxes = valid_bboxes
+
         _draw_detections(frame, contours)
 
         encoded = _encode(frame)
         if encoded:
-            yield encoded
+            with _encoded_lock:
+                _latest_encoded = encoded
+
+
+def _ensure_capture_thread():
+    global _capture_started
+    with _capture_lock:
+        if not _capture_started:
+            _capture_started = True
+            threading.Thread(target=_run_capture, daemon=True).start()
+
+
+# =============================================================================
+# PUBLIC GENERATOR
+# =============================================================================
+
+def generate_frames():
+    """Yield MJPEG frames with color-detection overlays. Multiple callers safe."""
+    _ensure_capture_thread()
+    while True:
+        with _encoded_lock:
+            frame = _latest_encoded
+        if frame:
+            yield frame
+        time.sleep(1 / 30)
+
+
+def take_main_snapshot() -> "tuple[bytes | None, list]":
+    """Return (jpeg_bytes, bboxes) from the latest main camera frame.
+
+    bboxes is a list of [x, y, w, h] ints (one per detected contour).
+    Returns (None, []) if no frame has been captured yet.
+    """
+    _ensure_capture_thread()
+    with _raw_frame_lock:
+        raw = _latest_raw_frame
+    if raw is None:
+        return None, []
+    with _bboxes_lock:
+        bboxes = list(_latest_contour_bboxes)
+    annotated = raw.copy()
+    contours_approx = [
+        np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], dtype=np.int32).reshape(-1, 1, 2)
+        for x, y, w, h in bboxes
+    ]
+    _draw_detections(annotated, contours_approx)
+    ok, buf = cv2.imencode(".jpg", annotated)
+    if not ok:
+        return None, bboxes
+    return buf.tobytes(), bboxes

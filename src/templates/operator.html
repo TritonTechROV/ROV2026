@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Operator Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        #cameras {
+            display: flex;
+            gap: 8px;
+        }
+        #cameras img {
+            width: 480px;
+            height: auto;
+        }
+        #snapshot-section {
+            margin-top: 8px;
+        }
+        #snapshot-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #snapshot-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        #snapshot-result {
+            margin-top: 8px;
+        }
+        #snapshot-img {
+            display: none;
+            max-width: 640px;
+        }
+        #snapshot-detections {
+            font-family: monospace;
+            font-size: 13px;
+            margin-top: 4px;
+            white-space: pre;
+        }
+        #main-snapshot-section {
+            margin-top: 8px;
+        }
+        #main-snapshot-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #main-snapshot-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        #main-snapshot-result {
+            margin-top: 8px;
+        }
+        #main-snapshot-img {
+            display: none;
+            max-width: 640px;
+        }
+        #main-snapshot-info {
+            font-family: monospace;
+            font-size: 13px;
+            margin-top: 4px;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <div id="cameras">
+        <img id="main-camera-stream" src="" alt="No Camera Stream :(">
+        <img id="bottom-camera-stream" src="" alt="No Camera Stream :(">
+    </div>
+
+    <div id="main-snapshot-section">
+        <button id="main-snapshot-btn">Capture + Measure (Main Camera)</button>
+        <div id="main-snapshot-result">
+            <img id="main-snapshot-img" alt="Main Camera Snapshot">
+            <div id="main-snapshot-info"></div>
+        </div>
+    </div>
+
+    <div id="snapshot-section">
+        <button id="snapshot-btn">Snapshot</button>
+        <div id="snapshot-result">
+            <img id="snapshot-img" alt="Snapshot">
+            <div id="snapshot-detections"></div>
+        </div>
+    </div>
+
+    <script>
+        // Video feeds come from the main app (port 5000) so cameras are opened
+        // in only one process — the werkzeug reloader child that serves port 5000.
+        const mainBase = `${window.location.protocol}//${window.location.hostname}:5000`;
+        document.getElementById('main-camera-stream').src = mainBase + '/main_video_feed';
+        document.getElementById('bottom-camera-stream').src = mainBase + '/bottom_video_feed';
+
+        document.getElementById('main-snapshot-btn').addEventListener('click', async function() {
+            const btn = this;
+            const img = document.getElementById('main-snapshot-img');
+            const info = document.getElementById('main-snapshot-info');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            try {
+                const res = await fetch('/main_snapshot', { method: 'POST' });
+                const data = await res.json();
+                if (data.error) {
+                    info.textContent = 'Error: ' + data.error;
+                    img.style.display = 'none';
+                } else {
+                    img.src = 'data:image/jpeg;base64,' + data.image;
+                    img.style.display = 'block';
+                    const bboxLine = data.bboxes.length === 0
+                        ? 'No detections.'
+                        : data.bboxes.map(b => `bbox=[${b.join(', ')}]`).join('\n');
+                    const dimLines = Object.entries(data.dimensions)
+                        .map(([k, v]) => `${k}: ${v}`).join('\n');
+                    info.textContent = bboxLine + '\n\nDimensions:\n' + dimLines;
+                }
+            } catch (e) {
+                info.textContent = 'Request failed: ' + e;
+                img.style.display = 'none';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Capture + Measure (Main Camera)';
+            }
+        });
+
+        document.getElementById('snapshot-btn').addEventListener('click', async function() {
+            const btn = this;
+            const img = document.getElementById('snapshot-img');
+            const det = document.getElementById('snapshot-detections');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            try {
+                const res = await fetch('/snapshot', { method: 'POST' });
+                const data = await res.json();
+                if (data.error) {
+                    det.textContent = 'Error: ' + data.error;
+                    img.style.display = 'none';
+                } else {
+                    img.src = 'data:image/jpeg;base64,' + data.image;
+                    img.style.display = 'block';
+                    if (data.detections.length === 0) {
+                        det.textContent = 'No crabs detected.';
+                    } else {
+                        det.textContent = data.detections.map(d =>
+                            `${d.class}  conf=${(d.confidence * 100).toFixed(1)}%  bbox=[${d.bbox.join(', ')}]`
+                        ).join('\n');
+                    }
+                }
+            } catch (e) {
+                det.textContent = 'Request failed: ' + e;
+                img.style.display = 'none';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Snapshot';
+            }
+        });
+    </script>
+</body>
+</html>

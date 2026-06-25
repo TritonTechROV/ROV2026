@@ -151,7 +151,7 @@ function animate(time) {
 
 	tagFrontTop.position.y = centerBoxHeight - TAG_HEIGHT/2;
 	tagBackTop.position.y = centerBoxHeight - TAG_HEIGHT/2;
-	tagFrontTop.position.x = -CENTER_BOX_WIDTH/2 + TAG_HEIGHT/2;
+	tagFrontTop.position.x = CENTER_BOX_WIDTH/2 - TAG_HEIGHT/2;
 	tagBackTop.position.x = -CENTER_BOX_WIDTH/2 + TAG_HEIGHT/2;
 
 	tagFrontBottom.position.y = TAG_HEIGHT/2;
